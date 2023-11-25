@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ELEVATOR.rs | Demo</title>
+    <script src="https://unpkg.com/vue@2.7.15"></script>
+    <style>
+        div {
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <h1>ELEVATOR.rs | Demo</h1>
+        <h4>Floors: {{data?.floors?.length}}, Elevators: {{data?.controller?.elevators?.length}}, Updated: {{update}}
+        </h4>
+        <div v-for="floor in data?.floors" style="display: flex; background-color: bisque; margin-top: 10px;">
+            <h2 style="padding-right: 10px;">{{floor?.id + data?.controller?.display_offset}}F</h4>
+                <div v-for="elevator in data?.controller?.elevators"
+                    style="display: flex; background-color: aliceblue; margin-right: 10px;">
+
+                    <div
+                        style="display: flex; position: relative; flex-direction: column; background-color:beige; margin-right: 10px;">
+                        <div v-show="elevator?.floor !== floor?.id"
+                            style="position: absolute; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,.8); padding: 0;">
+                        </div>
+                        <div style="background-color: cornflowerblue; max-width: 100px; justify-content: center;">
+                            <button v-for="inside_button in elevator?.inside_buttons"
+                                @click="() => request(elevator, inside_button.floor)"
+                                style=" margin-right: 5px; border-radius: 50%; transition: .2s ease;"
+                                :style="inside_button?.active ? 'background-color: yellow;' : ''">{{inside_button?.floor
+                                +
+                                data?.controller?.display_offset}}</button>
+                        </div>
+                        <div>
+                            <span :style="elevator?.moving_status == 'Up' ? 'color: red;' : ''">▲</span>
+                            <span :style="elevator?.moving_status == 'Down' ? 'color: red;' : ''">▼</span>
+                        </div>
+                        <button @click="() => doorControl(elevator, true)">OPEN</button>
+                        <button @click="() => doorControl(elevator, false)">CLOSE</button>
+
+                    </div>
+                    <div style="display: flex; width: 170px; height: 150px;"
+                        :style="elevator?.floor == floor?.id ? 'background-color: aquamarine; ' : ''">
+                        <div style="display:flex; background-color: gray; width: 80px;">
+                            <div :style="elevator?.floor === floor?.id && elevator?.door_status === 'Open' ? 'background-color: white; border: 0;' : ' background-color: rebeccapurple; border-left: 1px solid red;'"
+                                style="width: 100px; display: inline-block; transition: .2s ease;">
+                            </div>
+                            <div :style="elevator?.floor === floor?.id && elevator?.door_status === 'Open' ? 'background-color: white; border: 0;' : ' background-color: rebeccapurple; border-left: 1px solid red;'"
+                                style="width: 100px; display: inline-block; transition: .2s ease;">
+                            </div>
+                        </div>
+                        <div>
+                            <!-- <div style="padding: 0px; color: red; font-weight: bold;">#{{elevator?.id}}</div> -->
+                            <div style="padding: 0px;">
+                                <span :style="elevator?.moving_status == 'Up' ? 'color: red;' : ''">▲</span>
+                                <span :style="elevator?.moving_status == 'Down' ? 'color: red;' : ''">▼</span>
+                            </div>
+                            <div style="font-weight: bold; color: green">{{elevator?.floor +
+                                data?.controller?.display_offset}}F</div>
+                            <button @click="() => request(elevator, floor.id, 'up')"
+                                :style="elevator?.outside_buttons[floor.id]?.up ? 'background-color: red' : ''">👆</button>
+                            <button @click="() => request(elevator, floor.id, 'down')"
+                                :style="elevator?.outside_buttons[floor.id]?.down ? 'background-color: red' : ''">👇</button>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    <script type="module">
+
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    update: "not yet",
+                    data: {}
+                }
+            },
+            async created() {
+                await this.fetchData()
+                setInterval(() => {
+                    this.fetchData()
+                }, 200);
+            },
+            methods: {
+                async fetchData() {
+                    const data = await (await fetch('data')).json()
+                    data.floors.reverse()
+                    this.data = data
+                    this.update = new Date().getTime()
+                },
+                async request(elevator, floor, direction) {
+                    if (!elevator) return
+
+                    const result = await (await fetch(`req?elevator_id=${elevator.id}&floor=${floor}&direction=${direction}`)).json()
+                    if (result.error) {
+                        console.error(result.error)
+                    } else {
+                        console.info('success')
+                    }
+                },
+                async doorControl(elevator, status) {
+                    if (!elevator) return
+
+                    const result = await (await fetch(`door?elevator_id=${elevator.id}&status=${status}`)).json()
+                    if (result.error) {
+                        console.error(result.error)
+                    } else {
+                        console.info('success')
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
